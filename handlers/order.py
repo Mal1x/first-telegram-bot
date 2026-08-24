@@ -4,6 +4,7 @@ from aiogram.types import Message
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from keyboards.reply import phone_kb
+from database.db import add_order
 
 router = Router()
 
@@ -33,7 +34,17 @@ async def process_number(message: Message, state: FSMContext):
         await state.update_data(user_phone=phone)
         data = await state.get_data()
         await state.clear()
-        await message.answer(f"Finished!\nService: {data['service_type']}\nPhone Number: {data['user_phone']}")
+
+        # Saving data to db
+        await add_order(
+            user_id=message.from_user.id,
+            service_type=data['service_type'],
+            user_phone=data['user_phone']
+        )
+
+        await message.answer(
+            f"Order saved to DB!\nService: {data['service_type']}\nPhone Number: {data['user_phone']}"
+        )
     else:
         await message.answer("Write your phone number.", reply_markup=phone_kb)
         await state.set_state(Order.user_phone)
